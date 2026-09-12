@@ -771,7 +771,7 @@ export const Patch: Component<
 	}
 > = function () {
 	this.patching = false;
-	this.everest = false;
+	this.everest = true;
 	this.css = `
 		display: flex;
 		flex-direction: column;

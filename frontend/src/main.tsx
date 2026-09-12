@@ -6,6 +6,7 @@ import { store } from "./store";
 import { OpfsExplorer } from "./fs";
 import { Achievements } from "./achievements";
 import { ModInstaller } from "./modinstaller";
+import { modInstallState } from "./mods/state";
 import { SteamCloud } from "./steam";
 import { Settings } from "./settings";
 
@@ -103,8 +104,9 @@ const TopBar: Component<
 		}
 	`;
 
-	useChange([gameState.ready, gameState.playing], () => {
-		this.allowPlay = gameState.ready && !gameState.playing;
+	useChange([gameState.ready, gameState.playing, modInstallState.busy], () => {
+		this.allowPlay =
+			gameState.ready && !gameState.playing && !modInstallState.busy;
 	});
 
 	return (

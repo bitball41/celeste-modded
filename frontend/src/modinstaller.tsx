@@ -1,4 +1,6 @@
-import { loadedLibcurlPromise } from "./game/index";
+import { gameState, loadedLibcurlPromise } from "./game/index";
+import { BundledMods } from "./mods/BundledMods";
+import { modInstallState } from "./mods/state";
 import { TextField } from "./ui/TextField";
 import { Button, Icon } from "./ui/Button";
 import { rootFolder } from "./fs";
@@ -24,6 +26,7 @@ export const ModInstaller: Component<
 	{
 		entries: Mod[];
 		query: string;
+		downloadDisabled: boolean;
 	}
 > = function () {
 	// https://maddie480.ovh/celeste/gamebanana-categories
@@ -31,6 +34,11 @@ export const ModInstaller: Component<
 
 	this.query = "";
 	this.entries = [];
+	this.downloadDisabled = true;
+	useChange([gameState.ready, gameState.playing, modInstallState.busy], () => {
+		this.downloadDisabled =
+			!gameState.ready || gameState.playing || modInstallState.busy;
+	});
 	this.css = `
 		height: 100%;
 
@@ -180,12 +188,15 @@ export const ModInstaller: Component<
 	`;
 
 	const loadFrom = async (url: string) => {
-		await loadedLibcurlPromise;
-		let res = await epoxyFetch(url);
-		this.entries = [];
-
-		let entries: Mod[] = await res.json();
-		this.entries = entries.map((e) => $state(e));
+		try {
+			await loadedLibcurlPromise;
+			const res = await epoxyFetch(url);
+			if (!res.ok) throw new Error(`HTTP ${res.status}`);
+			const entries: Mod[] = await res.json();
+			this.entries = entries.map((e) => $state(e));
+		} catch (error) {
+			modInstallState.status = `Could not browse mods: ${String(error)}`;
+		}
 	};
 
 	useChange([this.open, this.entries], async () => {
@@ -194,7 +205,7 @@ export const ModInstaller: Component<
 			for (const e of this.entries) {
 				for (let i = 0; i < e.Screenshots.length; i++) {
 					let url = e.Screenshots[i];
-					if (url.startsWith("blob:")) continue;
+					if (!url || url.startsWith("blob:")) continue;
 					e.Screenshots[i] = "";
 					await new Promise((r) => setTimeout(r, 100));
 					epoxyFetch(url)
@@ -203,7 +214,10 @@ export const ModInstaller: Component<
 							let url = URL.createObjectURL(blob);
 							e.Screenshots[i] = url;
 							e.Screenshots = e.Screenshots;
-						});
+						})
+						.catch((error) =>
+							console.debug("Mod screenshot unavailable", error)
+						);
 				}
 			}
 		}
@@ -212,38 +226,58 @@ export const ModInstaller: Component<
 	const search = async () => {
 		console.log(this.query);
 		await loadFrom(
-			"https://maddie480.ovh/celeste/gamebanana-search?q=" + this.query
+			"https://maddie480.ovh/celeste/gamebanana-search?q=" +
+				encodeURIComponent(this.query)
 		);
 		this.query = "";
 	};
 
 	const download = async (mod: Mod) => {
-		let celeste = await rootFolder.getDirectoryHandle("Celeste", {
-			create: true,
-		});
-		let mods = await celeste.getDirectoryHandle("Mods", { create: true });
-
+		if (this.downloadDisabled || !mod.Files.length) return;
+		modInstallState.busy = true;
+		modInstallState.status = `Downloading ${mod.Name}…`;
 		try {
-			await mods.getFileHandle(mod.Files[0].Name, { create: false });
-			alert("Mod already installed");
-			return;
-		} catch (e) {}
+			let celeste = await rootFolder.getDirectoryHandle("Celeste", {
+				create: true,
+			});
+			let mods = await celeste.getDirectoryHandle("Mods", { create: true });
 
-		let resp = await epoxyFetch(mod.Files[0].URL);
-		let modfile = await mods.getFileHandle(mod.Files[0].Name, { create: true });
-		let writable = await modfile.createWritable();
-		// @ts-expect-error
-		await resp.body.pipeTo(writable);
+			try {
+				await mods.getFileHandle(mod.Files[0].Name, { create: false });
+				modInstallState.status = "Mod already installed";
+				return;
+			} catch (e) {}
 
-		console.log("Downloaded mod");
-	};
+			let resp = await epoxyFetch(mod.Files[0].URL);
+			if (!resp.ok || !resp.body) throw new Error(`HTTP ${resp.status}`);
+			let modfile = await mods.getFileHandle(mod.Files[0].Name, {
+				create: true,
+			});
+			let writable = await modfile.createWritable();
+			await resp.body.pipeTo(writable);
 
-	this.mount = async () => {
-		loadFrom("https://maddie480.ovh/celeste/gamebanana-featured");
+			modInstallState.status = `Installed ${mod.Name}.`;
+		} catch (error) {
+			modInstallState.status = `Could not install ${mod.Name}: ${String(error)}`;
+		} finally {
+			modInstallState.busy = false;
+		}
 	};
 
 	return (
 		<div>
+			<BundledMods open={use(this.open)} />
+			<h2>Browse other mods</h2>
+			<Button
+				type="normal"
+				icon="none"
+				disabled={false}
+				on:click={() =>
+					loadFrom("https://maddie480.ovh/celeste/gamebanana-featured")
+				}
+			>
+				Browse featured mods
+			</Button>
 			<div id="modsearch">
 				<TextField
 					placeholder={"Search mods..."}
@@ -268,7 +302,7 @@ export const ModInstaller: Component<
 				{$if(
 					use(this.entries, (entries) => entries.length === 0),
 					<div class="empty-message">
-						No mods found! Try searching for something else
+						Search or browse featured mods to see more maps.
 					</div>
 				)}
 				{use(this.entries, (e) =>
@@ -277,7 +311,7 @@ export const ModInstaller: Component<
 							<img
 								class="bg"
 								src={use(e.Screenshots, (s) =>
-									s[0].startsWith("blob:") ? s[0] : ""
+									s[0]?.startsWith("blob:") ? s[0] : ""
 								)}
 							/>
 							<div class="gradient-overlay"></div>
@@ -304,7 +338,7 @@ export const ModInstaller: Component<
 								icon="full"
 								type="primary"
 								class="moddownload"
-								disabled={false}
+								disabled={use(this.downloadDisabled)}
 								title={"Download Mod"}
 							>
 								<Icon icon={iconDownload} />

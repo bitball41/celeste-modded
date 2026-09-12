@@ -5,6 +5,7 @@ import { JsSplash } from "./loading";
 import { epoxyFetch, EpxTcpWs, EpxWs, getWispUrl } from "../epoxy";
 import { steamState } from "../steam";
 import { event } from "../analytics";
+import { modInstallState } from "../mods/state";
 
 export type Log = { color: string; log: string };
 export const gameState: Stateful<{
@@ -441,7 +442,7 @@ export async function PatchCeleste(installEverest: boolean) {
 	if (!(await exports.Patcher.PatchCeleste(installEverest))) {
 		throw "failed to patch celeste";
 	}
-	gameState.hasEverest = true;
+	gameState.hasEverest = installEverest;
 }
 
 export async function initSteam(
@@ -475,6 +476,7 @@ function monitorMem(): () => void {
 }
 
 export async function play() {
+	if (modInstallState.busy || gameState.playing || !gameState.ready) return;
 	event("play-begin");
 	gameState.playing = true;
 	gameState.initting = true;
