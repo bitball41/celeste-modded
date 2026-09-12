@@ -40,6 +40,7 @@ export default defineConfig({
 		port: os.type() === "Darwin" ? 4999 : 5000,
 	},
 	build: {
+		manifest: true,
 		target: "es2022",
 		cssMinify: "lightningcss",
 		minify: "terser",

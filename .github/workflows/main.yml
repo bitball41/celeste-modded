@@ -88,6 +88,28 @@ jobs:
           body: "${{ github.event.head_commit.url }} ${{ github.event.head_commit.message }}"
           artifacts: webleste-loader.tar.zst
 
+  publish-jsdelivr-runtime:
+    name: Publish jsDelivr runtime branch
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      contents: write
+
+    steps:
+      - name: Get built runtime
+        uses: actions/download-artifact@v4
+        with:
+          name: webleste-loader
+          path: dist/
+
+      - name: Publish generated runtime
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: runtime
+          publish_dir: dist
+          force_orphan: true
+
   deployr58:
     name: Deploy to celeste.r58playz.dev
     runs-on: ubuntu-latest

@@ -394,11 +394,15 @@ export async function preInit() {
 
 	const dlls = getDlls();
 
-	const loc = location.pathname;
+	// Resolve fetched assemblies beside this built module. This also lets a
+	// standalone launcher load an immutable runtime from jsDelivr.
+	const runtimeRoot = import.meta.env.DEV
+		? new URL("/", location.href).href
+		: new URL("../", import.meta.url).href;
 
 	await runtime.runMain();
 	await exports.CelesteBootstrap.MountFilesystems(
-		loc.substring(0, loc.lastIndexOf("/")) + "/",
+		runtimeRoot,
 		dlls.map((x) => `${x[0]}|${x[1]}`)
 	);
 	await exports.CelesteLoader.PreInit();

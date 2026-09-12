@@ -63,16 +63,48 @@
   <script>
     (function(){
       "use strict";
-      var GAME_URL="https://celeste.r58playz.dev/";
+      var REPOSITORY="Bitball41/celeste-modded";
+      var RUNTIME_BRANCH="runtime";
+      var HOSTED_FALLBACK="https://celeste.r58playz.dev/";
       var selected=new Set(["tornado-valley","path-of-hope","cat-isle"]);
       var buttons=document.querySelectorAll(".map");
       var stage=document.getElementById("stage"),status=document.getElementById("status");
       buttons.forEach(function(button){button.onclick=function(){var id=button.dataset.map;if(selected.has(id))selected.delete(id);else selected.add(id);button.classList.toggle("selected",selected.has(id));document.getElementById("launch").textContent=selected.size?"Launch selected mods":"Select at least one map";};});
-      function start(ids){
+      function loadScript(src){
+        return new Promise(function(resolve,reject){var script=document.createElement("script");script.src=src;script.onload=resolve;script.onerror=function(){reject(new Error("Failed to load "+src));};document.head.appendChild(script);});
+      }
+      async function runtimeRef(){
+        var response=await fetch("https://api.github.com/repos/"+REPOSITORY+"/commits/"+RUNTIME_BRANCH+"?launcher="+Date.now(),{cache:"no-store",headers:{Accept:"application/vnd.github+json"}});
+        if(!response.ok)throw new Error("Runtime lookup failed: "+response.status);
+        var sha=String((await response.json()).sha||"");
+        if(!/^[0-9a-f]{40}$/i.test(sha))throw new Error("Runtime lookup returned an invalid commit");
+        return sha;
+      }
+      async function start(ids){
         if(ids&&ids.length===0)return;
         stage.classList.add("visible");status.textContent=ids?"Preparing "+ids.length+" mod"+(ids.length===1?"":"s")+"…":"Loading standard Celeste…";
-        var url=new URL(GAME_URL);if(ids)url.searchParams.set("bundle",ids.join(","));
-        requestAnimationFrame(function(){location.assign(url.toString());});
+        var query=ids?"?bundle="+encodeURIComponent(ids.join(",")):"";
+        if(!globalThis.crossOriginIsolated){location.assign(HOSTED_FALLBACK+query);return;}
+        try{
+          status.textContent="Resolving current Webleste build…";
+          var sha=await runtimeRef();
+          var base="https://cdn.jsdelivr.net/gh/"+REPOSITORY+"@"+sha+"/";
+          var response=await fetch(base+".vite/manifest.json");
+          if(!response.ok)throw new Error("Runtime manifest failed: "+response.status);
+          var manifest=await response.json();
+          var entry=manifest["index.html"];
+          if(!entry||!entry.file)throw new Error("Webleste entry is missing");
+          var baseTag=document.createElement("base");baseTag.href=base;document.head.appendChild(baseTag);
+          (entry.css||[]).forEach(function(file){var link=document.createElement("link");link.rel="stylesheet";link.href=base+file;document.head.appendChild(link);});
+          history.replaceState(null,"",location.pathname+query+location.hash);
+          document.body.innerHTML='<div id="app"></div>';
+          await loadScript(base+"bundled-mods.js");
+          await import(base+entry.file);
+        }catch(error){
+          console.error("[Celeste launcher] jsDelivr runtime failed",error);
+          status.textContent="jsDelivr failed; opening the hosted build…";
+          location.assign(HOSTED_FALLBACK+query);
+        }
       }
       document.getElementById("vanilla").onclick=function(){start(null);};
       document.getElementById("launch").onclick=function(){start(Array.from(selected));};
