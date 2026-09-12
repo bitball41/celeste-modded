@@ -45,6 +45,11 @@ Load the complete installer directly from jsDelivr:
 
 `https://cdn.jsdelivr.net/gh/Bitball41/celeste-modded@threads-v2/frontend/public/bundled-mods.js`
 
+Or use the single-file visual launcher, which offers Standard Webleste, each
+individual map, or all three before opening the current hosted build:
+
+`https://cdn.jsdelivr.net/gh/Bitball41/celeste-modded@threads-v2/celeste-modded.html`
+
 It exposes `window.WeblesteModPack`, including `install`, `installAll`,
 `installed`, the pinned catalog, dependency resolver, integrity hashes, and
 progress callbacks. Pass Webleste's `epoxyFetch` as `fetcher` when direct CORS

@@ -5,6 +5,14 @@ import { modInstallState } from "./state";
 
 const modPack = window.WeblesteModPack;
 const bundledMaps = modPack.catalog.maps;
+const requestedBundles = (() => {
+	const requested = new URLSearchParams(location.search).get("bundle");
+	if (!requested) return [];
+	return requested
+		.split(",")
+		.filter((id) => bundledMaps.some((map) => map.id === id));
+})();
+let autoLaunchStarted = false;
 
 export const BundledMods: Component<
 	{ open: boolean },
@@ -53,7 +61,13 @@ export const BundledMods: Component<
 			void refresh();
 	});
 	const install = async (ids: string[]) => {
-		if (this.disabled) return;
+		if (
+			!gameState.ready ||
+			!gameState.hasEverest ||
+			gameState.playing ||
+			modInstallState.busy
+		)
+			return false;
 		this.checking = true;
 		try {
 			modInstallState.busy = true;
@@ -69,13 +83,29 @@ export const BundledMods: Component<
 							"Ready! Press Play, then choose the map in Everest’s chapter select. Path of Hope: start with the A-side.";
 				},
 			});
+			return true;
 		} catch (error) {
-			if (!modInstallState.status) modInstallState.status = String(error);
+			modInstallState.status = `Could not install selected maps: ${String(error)}`;
+			return false;
 		} finally {
 			modInstallState.busy = false;
 			await refresh();
 		}
 	};
+	useChange([gameState.ready, gameState.hasEverest, gameState.playing], () => {
+		if (
+			requestedBundles.length &&
+			gameState.ready &&
+			gameState.hasEverest &&
+			!gameState.playing &&
+			!autoLaunchStarted
+		) {
+			autoLaunchStarted = true;
+			void install(requestedBundles).then((installed) => {
+				if (installed) window.dispatchEvent(new Event("webleste-bundle-ready"));
+			});
+		}
+	});
 	return (
 		<section aria-label="Bundled mods">
 			<h2>Bundled maps</h2>

@@ -274,6 +274,7 @@ export const Main: Component<
 
 	this.fsOpen = false;
 	this.achievementsOpen = false;
+	this.modInstallerOpen = false;
 
 	this.mount = () => {
 		useChange([store.logs], (x) => {
@@ -307,6 +308,20 @@ export const Main: Component<
 				</Dialog>
 			</div>
 		) as HTMLDivElement;
+		window.addEventListener(
+			"webleste-bundle-ready",
+			() => {
+				this.modInstallerOpen = false;
+				void play();
+			},
+			{ once: true }
+		);
+		if (new URLSearchParams(location.search).has("bundle")) {
+			useChange([gameState.hasEverest], () => {
+				if (gameState.hasEverest && !gameState.playing)
+					this.modInstallerOpen = true;
+			});
+		}
 		await (game.$ as ComponentType<typeof GameView>).start();
 	};
 
