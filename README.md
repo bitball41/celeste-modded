@@ -49,7 +49,7 @@ Or use the single-file minimal launcher. It boots the compiled runtime in the
 same document from jsDelivr. Each individual map has an isolated save profile,
 and the all-three option uses one shared save:
 
-`https://cdn.jsdelivr.net/gh/Bitball41/celeste-modded@threads-v2/celeste-modded.html`
+`https://cdn.jsdelivr.net/gh/Bitball41/celeste-modded@threads-v2/celeste-loader-minimal.html`
 
 It exposes `window.WeblesteModPack`, including `install`, `installAll`,
 `installed`, the pinned catalog, dependency resolver, integrity hashes, and
