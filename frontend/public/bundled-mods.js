@@ -1,4 +1,10 @@
-{
+/* Webleste bundled maps: Tornado Valley, Path of Hope, and Cat Isle.
+ * Single-file browser installer. Mod archives remain lazy-loaded and cached in OPFS.
+ * jsDelivr: https://cdn.jsdelivr.net/gh/Bitball41/celeste-modded@threads-v2/bundled-mods.js
+ */
+(function (global) {
+  "use strict";
+  const catalog = {
 	"schemaVersion": 1,
 	"builtins": ["Celeste", "Everest", "EverestCore"],
 	"maps": [
@@ -340,4 +346,154 @@
 			]
 		}
 	]
-}
+};
+  const builtin = new Set(catalog.builtins);
+
+  function packageForModule(name) {
+    return catalog.packages.find((pkg) => pkg.modules.some((mod) => mod.name === name));
+  }
+
+  function packagesFor(ids) {
+    const result = [];
+    const seen = new Set();
+    function visit(name) {
+      if (builtin.has(name) || seen.has(name)) return;
+      const pkg = packageForModule(name);
+      if (!pkg) throw new Error(`Missing bundled dependency: ${name}`);
+      for (const mod of pkg.modules) seen.add(mod.name);
+      for (const dependency of pkg.dependencies) visit(dependency.name);
+      result.push(pkg);
+    }
+    for (const id of ids) {
+      const map = catalog.maps.find((entry) => entry.id === id);
+      if (!map) throw new Error(`Unknown bundled map: ${id}`);
+      visit(map.module);
+    }
+    return result;
+  }
+
+  function formatSize(bytes) {
+    return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+  }
+
+  function downloadSize(ids) {
+    return packagesFor(ids).reduce((total, pkg) => total + pkg.size, 0);
+  }
+
+  function missing(error) {
+    return error instanceof DOMException && error.name === "NotFoundError";
+  }
+
+  async function getMods(root, create) {
+    const celeste = await root.getDirectoryHandle("Celeste", { create });
+    return celeste.getDirectoryHandle("Mods", { create });
+  }
+
+  async function validFile(folder, pkg) {
+    try {
+      const file = await (await folder.getFileHandle(pkg.filename)).getFile();
+      if (file.size !== pkg.size) return false;
+      const hash = await crypto.subtle.digest("SHA-256", await file.arrayBuffer());
+      return Array.from(new Uint8Array(hash), (byte) => byte.toString(16).padStart(2, "0")).join("") === pkg.sha256;
+    } catch (error) {
+      if (missing(error)) return false;
+      throw error;
+    }
+  }
+
+  async function installed(options = {}) {
+    const root = options.rootFolder || await navigator.storage.getDirectory();
+    let mods;
+    try {
+      mods = await getMods(root, false);
+    } catch (error) {
+      if (missing(error)) return [];
+      throw error;
+    }
+    const valid = new Map();
+    for (const pkg of packagesFor(catalog.maps.map((map) => map.id))) {
+      valid.set(pkg.name, await validFile(mods, pkg));
+    }
+    return catalog.maps
+      .filter((map) => packagesFor([map.id]).every((pkg) => valid.get(pkg.name)))
+      .map((map) => map.id);
+  }
+
+  async function stageDownload(stage, pkg, fetcher, onProgress) {
+    if (await validFile(stage, pkg)) return;
+    let lastError;
+    for (const url of pkg.urls) {
+      try {
+        const response = await fetcher(url);
+        if (!response.ok || !response.body) throw new Error(`HTTP ${response.status}`);
+        const file = await stage.getFileHandle(pkg.filename, { create: true });
+        const writable = await file.createWritable();
+        let received = 0;
+        const progress = new TransformStream({
+          transform(chunk, controller) {
+            received += chunk.byteLength;
+            if (received > pkg.size) throw new Error(`Unexpected download size for ${pkg.name}`);
+            onProgress({ phase: "download", name: pkg.name, received, total: pkg.size });
+            controller.enqueue(chunk);
+          }
+        });
+        await response.body.pipeThrough(progress).pipeTo(writable);
+        if (!(await validFile(stage, pkg))) throw new Error(`Download integrity check failed for ${pkg.name}`);
+        return;
+      } catch (error) {
+        if (error instanceof DOMException && ["QuotaExceededError", "NotAllowedError"].includes(error.name)) throw error;
+        lastError = error;
+      }
+    }
+    throw new Error(`Could not download ${pkg.name}. ${String(lastError)}. Retry to resume cached downloads.`);
+  }
+
+  async function install(ids, options = {}) {
+    if (!Array.isArray(ids)) ids = [ids];
+    const root = options.rootFolder || await navigator.storage.getDirectory();
+    const fetcher = options.fetcher || global.fetch.bind(global);
+    const onProgress = options.onProgress || function () {};
+    const run = async function () {
+      const mods = await getMods(root, true);
+      const stage = await root.getDirectoryHandle("BundledModDownloads", { create: true });
+      const required = packagesFor(ids);
+      const needed = [];
+      for (const pkg of required) if (!(await validFile(mods, pkg))) needed.push(pkg);
+      for (const pkg of needed) await stageDownload(stage, pkg, fetcher, onProgress);
+      for (const pkg of needed) {
+        onProgress({ phase: "install", name: pkg.name, received: pkg.size, total: pkg.size });
+        const source = await (await stage.getFileHandle(pkg.filename)).getFile();
+        let existed = true;
+        try { await mods.getFileHandle(pkg.filename); }
+        catch (error) {
+          if (!missing(error)) throw error;
+          existed = false;
+        }
+        const target = await mods.getFileHandle(pkg.filename, { create: true });
+        try {
+          await source.stream().pipeTo(await target.createWritable());
+        } catch (error) {
+          if (!existed) await mods.removeEntry(pkg.filename);
+          throw error;
+        }
+        await stage.removeEntry(pkg.filename);
+      }
+      onProgress({ phase: "done", ids: ids.slice() });
+      return ids.slice();
+    };
+    return navigator.locks ? navigator.locks.request("webleste-bundled-mods", run) : run();
+  }
+
+  const ids = Object.freeze(catalog.maps.map((map) => map.id));
+  global.WeblesteModPack = Object.freeze({
+    version: 1,
+    catalog: Object.freeze(catalog),
+    ids,
+    packagesFor,
+    downloadSize,
+    formatSize,
+    installed,
+    install,
+    installAll: (options) => install(ids, options)
+  });
+})(globalThis);

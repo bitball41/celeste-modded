@@ -1,7 +1,10 @@
 import { Button } from "../ui/Button";
 import { gameState } from "../game/dotnet";
-import { bundledMaps, downloadSize, formatSize } from "./catalog";
+import { epoxyFetch } from "../epoxy";
 import { modInstallState } from "./state";
+
+const modPack = window.WeblesteModPack;
+const bundledMaps = modPack.catalog.maps;
 
 export const BundledMods: Component<
 	{ open: boolean },
@@ -38,8 +41,7 @@ export const BundledMods: Component<
 	const refresh = async () => {
 		this.checking = true;
 		try {
-			const { installedBundles } = await import("./install");
-			this.installed = await installedBundles();
+			this.installed = await modPack.installed();
 		} catch (error) {
 			modInstallState.status = `Could not read installed bundles: ${String(error)}`;
 		} finally {
@@ -54,11 +56,23 @@ export const BundledMods: Component<
 		if (this.disabled) return;
 		this.checking = true;
 		try {
-			const { installBundles } = await import("./install");
-			await installBundles(ids);
+			modInstallState.busy = true;
+			await modPack.install(ids, {
+				fetcher: epoxyFetch,
+				onProgress: (progress) => {
+					if (progress.phase === "download")
+						modInstallState.status = `Downloading ${progress.name}: ${modPack.formatSize(progress.received || 0)} / ${modPack.formatSize(progress.total || 0)}`;
+					else if (progress.phase === "install")
+						modInstallState.status = `Installing ${progress.name}…`;
+					else if (progress.phase === "done")
+						modInstallState.status =
+							"Ready! Press Play, then choose the map in Everest’s chapter select. Path of Hope: start with the A-side.";
+				},
+			});
 		} catch (error) {
 			if (!modInstallState.status) modInstallState.status = String(error);
 		} finally {
+			modInstallState.busy = false;
 			await refresh();
 		}
 	};
@@ -86,7 +100,7 @@ export const BundledMods: Component<
 							{use(this.installed, (ids) =>
 								ids.includes(map.id)
 									? "Installed · Check / repair"
-									: `Install · ${formatSize(downloadSize([map.id]))}`
+									: `Install · ${modPack.formatSize(modPack.downloadSize([map.id]))}`
 							)}
 						</Button>
 						<a href={map.page} target="_blank" rel="noopener noreferrer">
@@ -102,7 +116,7 @@ export const BundledMods: Component<
 				on:click={() => install(bundledMaps.map((m) => m.id))}
 			>
 				Install all three ·{" "}
-				{formatSize(downloadSize(bundledMaps.map((m) => m.id)))}
+				{modPack.formatSize(modPack.downloadSize(bundledMaps.map((m) => m.id)))}
 			</Button>
 			<p class="status" role="status" aria-live="polite">
 				{use(modInstallState.status)}

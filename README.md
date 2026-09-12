@@ -29,8 +29,8 @@ WASM payload. Browsing external featured mods is also explicit rather than a
 startup request. Everest still scans installed ZIPs when starting the game;
 assets inside a ZIP are not individually streamed over the network.
 
-Required dependencies are resolved recursively from the committed
-`frontend/src/mods/bundled-mods.lock.json`; optional dependencies and the larger
+Required dependencies are resolved recursively from the single-file
+`frontend/public/bundled-mods.js`; optional dependencies and the larger
 Mount Kimitany Saga are not pulled in. The pinned helper set requires Everest
 1.6531.0 or newer (the stable build when this catalog was generated). Existing
 older Everest installations need updating before using Cat Isle's helper set.
@@ -41,14 +41,17 @@ redownloading valid ZIPs. Installation disables Play until finished. Browser
 storage can be cleared or evicted; reinstalling restores the bundle. Use the
 existing Files manager to remove ZIPs you no longer want Everest to load.
 
-To deliberately refresh the pinned catalog, install Python's `PyYAML` and run
-`python scripts/update-bundled-mods.py`. It reads each original archive's
-`everest.yaml`/`everest.yml`, follows required dependencies, checks minimum
-versions, and records hashes, sizes, and the advertised map SIDs. Normal builds
-use the committed catalog without downloading mod archives. Upstream code and
-assets are never rewritten or repackaged; each catalog entry links to its
-original mod page and credits. A successful frontend build does not constitute
-an in-game compatibility test of the helper DLLs.
+Load the complete installer directly from jsDelivr:
+
+`https://cdn.jsdelivr.net/gh/Bitball41/celeste-modded@threads-v2/frontend/public/bundled-mods.js`
+
+It exposes `window.WeblesteModPack`, including `install`, `installAll`,
+`installed`, the pinned catalog, dependency resolver, integrity hashes, and
+progress callbacks. Pass Webleste's `epoxyFetch` as `fetcher` when direct CORS
+downloads are unavailable. Upstream code and assets are never rewritten or
+repackaged; each catalog entry links to its original mod page and credits. A
+successful frontend build does not constitute an in-game compatibility test of
+the helper DLLs.
 
 ## I want to build this
 
