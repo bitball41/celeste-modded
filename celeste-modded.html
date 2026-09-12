@@ -4,22 +4,6 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>Celeste Modded</title>
-  <style>
-    * { box-sizing: border-box; }
-    html, body { width: 100%; min-height: 100%; margin: 0; }
-    body { display: grid; place-items: center; padding: 24px; color: #eee; background: #111; font: 15px/1.45 system-ui, sans-serif; }
-    main { width: min(460px, 100%); }
-    h1 { margin: 0 0 6px; font-size: 24px; }
-    h2 { margin: 24px 0 8px; font-size: 14px; }
-    p { margin: 0 0 14px; color: #aaa; }
-    .buttons { display: grid; gap: 8px; }
-    button { width: 100%; padding: 12px 14px; border: 1px solid #3a3a3a; border-radius: 6px; color: #eee; background: #1c1c1c; font: inherit; text-align: left; cursor: pointer; }
-    button:hover { background: #252525; border-color: #555; }
-    button span { display: block; margin-top: 2px; color: #999; font-size: 12px; }
-    #loading { display: none; text-align: center; }
-    #loading.visible { display: block; }
-    #error { color: #e99; white-space: pre-wrap; }
-  </style>
 </head>
 <body>
   <main id="menu">
@@ -27,19 +11,15 @@
     <p>Choose how progress should be saved.</p>
 
     <h2>Separate saves</h2>
-    <div class="buttons">
-      <button data-bundle="tornado-valley" data-save="tornado-valley">Tornado Valley<span>Uses its own save.</span></button>
-      <button data-bundle="path-of-hope" data-save="path-of-hope">Path of Hope<span>Uses its own save. Start with the A-side.</span></button>
-      <button data-bundle="cat-isle" data-save="cat-isle">Cat Isle<span>Uses its own save.</span></button>
-    </div>
+    <button data-bundle="tornado-valley" data-save="tornado-valley">Tornado Valley</button>
+    <button data-bundle="path-of-hope" data-save="path-of-hope">Path of Hope (A-side)</button>
+    <button data-bundle="cat-isle" data-save="cat-isle">Cat Isle</button>
 
     <h2>One shared save</h2>
-    <div class="buttons">
-      <button data-bundle="tornado-valley,path-of-hope,cat-isle" data-save="shared">All three maps<span>Progress for every bundled map stays in one save.</span></button>
-    </div>
+    <button data-bundle="tornado-valley,path-of-hope,cat-isle" data-save="shared">All three maps</button>
   </main>
 
-  <main id="loading">
+  <main id="loading" hidden>
     <h1>Loading Celeste</h1>
     <p id="status">Resolving the current build…</p>
     <p id="error"></p>
@@ -82,7 +62,7 @@
         if (booting) return;
         booting = true;
         menu.hidden = true;
-        loading.classList.add("visible");
+        loading.hidden = false;
 
         if (!globalThis.crossOriginIsolated) {
           status.textContent = "Cannot start here.";
