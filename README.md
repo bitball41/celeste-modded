@@ -45,8 +45,9 @@ Load the complete installer directly from jsDelivr:
 
 `https://cdn.jsdelivr.net/gh/Bitball41/celeste-modded@threads-v2/frontend/public/bundled-mods.js`
 
-Or use the single-file visual launcher, which offers Standard Webleste, each
-individual map, or all three before opening the current hosted build:
+Or use the single-file minimal launcher. It boots the compiled runtime in the
+same document from jsDelivr. Each individual map has an isolated save profile,
+and the all-three option uses one shared save:
 
 `https://cdn.jsdelivr.net/gh/Bitball41/celeste-modded@threads-v2/celeste-modded.html`
 

@@ -3,112 +3,131 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#080b1b">
   <title>Celeste Modded</title>
   <style>
-    :root { color-scheme: dark; --ink:#080b1b; --panel:rgba(17,20,49,.78); --line:rgba(203,211,255,.18); --text:#f6f3ff; --muted:#aaa8c8; --pink:#ff6fae; --blue:#7ea8ff; }
-    * { box-sizing:border-box; }
-    html,body { width:100%; height:100%; margin:0; overflow:hidden; font-family:Inter,ui-sans-serif,system-ui,sans-serif; background:var(--ink); color:var(--text); }
-    body::before { content:""; position:fixed; inset:0; background:radial-gradient(circle at 72% 18%,rgba(126,168,255,.21),transparent 26%),radial-gradient(circle at 20% 75%,rgba(255,111,174,.15),transparent 32%),linear-gradient(155deg,#151638 0%,#080b1b 56%,#050713 100%); }
-    .stars,.stars::before,.stars::after { position:fixed; inset:0; content:""; pointer-events:none; background-image:radial-gradient(circle,#fff 0 1px,transparent 1.4px); background-size:89px 89px; opacity:.25; }
-    .stars::before { transform:translate(33px,22px); background-size:131px 131px; opacity:.48; }
-    .stars::after { transform:translate(12px,61px); background-size:197px 197px; opacity:.7; }
-    .mountains { position:fixed; inset:auto 0 0; height:42vh; background:linear-gradient(145deg,transparent 0 24%,rgba(33,37,81,.75) 24.3% 48%,transparent 48.3%),linear-gradient(215deg,transparent 0 35%,rgba(19,23,59,.95) 35.3% 65%,transparent 65.3%); opacity:.7; pointer-events:none; }
-    main { position:relative; z-index:2; width:min(970px,calc(100% - 32px)); height:100%; margin:auto; display:grid; align-content:center; gap:24px; padding:28px 0; }
-    header { display:flex; align-items:end; justify-content:space-between; gap:24px; }
-    .eyebrow { color:var(--pink); font-size:.72rem; font-weight:800; letter-spacing:.24em; text-transform:uppercase; }
-    h1 { margin:.15rem 0 0; font-size:clamp(2.4rem,7vw,5.2rem); line-height:.92; letter-spacing:-.055em; text-shadow:0 12px 42px rgba(0,0,0,.48); }
-    header p { max-width:340px; margin:0; color:var(--muted); line-height:1.5; text-align:right; }
-    .panel { padding:clamp(18px,3vw,30px); border:1px solid var(--line); border-radius:26px; background:var(--panel); backdrop-filter:blur(22px); box-shadow:0 30px 100px rgba(0,0,0,.4); }
-    .label { margin-bottom:14px; color:#d4d2e9; font-size:.78rem; font-weight:750; letter-spacing:.12em; text-transform:uppercase; }
-    .maps { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
-    .map { appearance:none; min-height:126px; padding:18px; border:1px solid var(--line); border-radius:18px; color:var(--text); background:rgba(255,255,255,.035); text-align:left; cursor:pointer; transition:.18s ease; }
-    .map:hover { transform:translateY(-2px); border-color:rgba(126,168,255,.58); background:rgba(126,168,255,.08); }
-    .map.selected { border-color:var(--pink); background:linear-gradient(145deg,rgba(255,111,174,.18),rgba(126,168,255,.09)); box-shadow:inset 0 0 0 1px rgba(255,111,174,.18),0 12px 34px rgba(255,111,174,.09); }
-    .map strong { display:block; font-size:1.04rem; }
-    .map span { display:block; margin-top:9px; color:var(--muted); font-size:.82rem; line-height:1.4; }
-    .tag { display:inline-flex!important; width:auto; margin-top:12px!important; padding:4px 7px; border-radius:99px; color:#ffd8e9!important; background:rgba(255,111,174,.17); font-size:.64rem!important; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
-    .actions { display:grid; grid-template-columns:1fr 1.6fr; gap:12px; margin-top:18px; }
-    .action { min-height:55px; border:0; border-radius:15px; font:750 .92rem/1 inherit; cursor:pointer; transition:.18s ease; }
-    .action:hover { transform:translateY(-2px); filter:brightness(1.08); }
-    #vanilla { color:#e8ebff; background:#292d57; }
-    #launch { color:#130d1c; background:linear-gradient(110deg,var(--pink),#ff9cc7 45%,var(--blue)); box-shadow:0 14px 40px rgba(255,111,174,.2); }
-    .hint { margin:13px 2px 0; color:#7f7d9f; font-size:.75rem; }
-    #stage { position:fixed; z-index:10; inset:0; display:none; background:#050713; }
-    #stage.visible { display:grid; place-content:center; }
-    #loading { position:absolute; inset:0; display:grid; place-content:center; gap:14px; text-align:center; background:radial-gradient(circle at center,#17193a,#070919 67%); transition:opacity .35s; }
-    #loading.hidden { opacity:0; pointer-events:none; }
-    .peak { width:42px; height:42px; margin:auto; border:3px solid transparent; border-top-color:var(--pink); border-right-color:var(--blue); transform:rotate(-45deg); animation:spin 1s linear infinite; }
-    @keyframes spin { to { transform:rotate(315deg); } }
-    #status { color:var(--muted); font-size:.86rem; }
-    @media(max-width:720px){ main{align-content:start;overflow:auto;padding-top:48px} header{display:block} header p{text-align:left;margin-top:16px}.maps{grid-template-columns:1fr}.map{min-height:100px}.actions{grid-template-columns:1fr} }
+    * { box-sizing: border-box; }
+    html, body { width: 100%; min-height: 100%; margin: 0; }
+    body { display: grid; place-items: center; padding: 24px; color: #eee; background: #111; font: 15px/1.45 system-ui, sans-serif; }
+    main { width: min(460px, 100%); }
+    h1 { margin: 0 0 6px; font-size: 24px; }
+    h2 { margin: 24px 0 8px; font-size: 14px; }
+    p { margin: 0 0 14px; color: #aaa; }
+    .buttons { display: grid; gap: 8px; }
+    button { width: 100%; padding: 12px 14px; border: 1px solid #3a3a3a; border-radius: 6px; color: #eee; background: #1c1c1c; font: inherit; text-align: left; cursor: pointer; }
+    button:hover { background: #252525; border-color: #555; }
+    button span { display: block; margin-top: 2px; color: #999; font-size: 12px; }
+    #loading { display: none; text-align: center; }
+    #loading.visible { display: block; }
+    #error { color: #e99; white-space: pre-wrap; }
   </style>
 </head>
 <body>
-  <div class="stars"></div><div class="mountains"></div>
-  <main id="picker">
-    <header><div><div class="eyebrow">Everest collection</div><h1>Celeste<br>Modded</h1></div><p>Choose one map or take all three. The launcher downloads each archive only when needed and keeps it cached.</p></header>
-    <section class="panel">
-      <div class="label">Included maps · tap to select</div>
-      <div class="maps">
-        <button class="map selected" data-map="tornado-valley"><strong>Tornado Valley</strong><span>A compact standalone climb built around wind and momentum.</span></button>
-        <button class="map selected" data-map="path-of-hope"><strong>Path of Hope</strong><span>Move blocks, dream jelly, and a custom chapter aesthetic.</span><span class="tag">A-side first</span></button>
-        <button class="map selected" data-map="cat-isle"><strong>Cat Isle</strong><span>A relaxed island adventure with its required helper mods included.</span></button>
-      </div>
-      <div class="actions"><button class="action" id="vanilla">Open Webleste</button><button class="action" id="launch">Launch selected mods</button></div>
-      <div class="hint">First setup still needs your legitimate Celeste files. Everest is enabled automatically for modded launches.</div>
-    </section>
+  <main id="menu">
+    <h1>Celeste Modded</h1>
+    <p>Choose how progress should be saved.</p>
+
+    <h2>Separate saves</h2>
+    <div class="buttons">
+      <button data-bundle="tornado-valley" data-save="tornado-valley">Tornado Valley<span>Uses its own save.</span></button>
+      <button data-bundle="path-of-hope" data-save="path-of-hope">Path of Hope<span>Uses its own save. Start with the A-side.</span></button>
+      <button data-bundle="cat-isle" data-save="cat-isle">Cat Isle<span>Uses its own save.</span></button>
+    </div>
+
+    <h2>One shared save</h2>
+    <div class="buttons">
+      <button data-bundle="tornado-valley,path-of-hope,cat-isle" data-save="shared">All three maps<span>Progress for every bundled map stays in one save.</span></button>
+    </div>
   </main>
-  <section id="stage" aria-label="Loading"><div id="loading"><div class="peak"></div><strong>Climbing into Webleste</strong><div id="status">Connecting to the current build…</div></div></section>
+
+  <main id="loading">
+    <h1>Loading Celeste</h1>
+    <p id="status">Resolving the current build…</p>
+    <p id="error"></p>
+  </main>
+
   <script>
-    (function(){
+    (function () {
       "use strict";
-      var REPOSITORY="Bitball41/celeste-modded";
-      var RUNTIME_BRANCH="runtime";
-      var HOSTED_FALLBACK="https://celeste.r58playz.dev/";
-      var selected=new Set(["tornado-valley","path-of-hope","cat-isle"]);
-      var buttons=document.querySelectorAll(".map");
-      var stage=document.getElementById("stage"),status=document.getElementById("status");
-      buttons.forEach(function(button){button.onclick=function(){var id=button.dataset.map;if(selected.has(id))selected.delete(id);else selected.add(id);button.classList.toggle("selected",selected.has(id));document.getElementById("launch").textContent=selected.size?"Launch selected mods":"Select at least one map";};});
-      function loadScript(src){
-        return new Promise(function(resolve,reject){var script=document.createElement("script");script.src=src;script.onload=resolve;script.onerror=function(){reject(new Error("Failed to load "+src));};document.head.appendChild(script);});
+
+      var REPOSITORY = "Bitball41/celeste-modded";
+      var RUNTIME_BRANCH = "runtime";
+      var menu = document.getElementById("menu");
+      var loading = document.getElementById("loading");
+      var status = document.getElementById("status");
+      var error = document.getElementById("error");
+      var booting = false;
+
+      function loadScript(src) {
+        return new Promise(function (resolve, reject) {
+          var script = document.createElement("script");
+          script.src = src;
+          script.onload = resolve;
+          script.onerror = function () { reject(new Error("Failed to load " + src)); };
+          document.head.appendChild(script);
+        });
       }
-      async function runtimeRef(){
-        var response=await fetch("https://api.github.com/repos/"+REPOSITORY+"/commits/"+RUNTIME_BRANCH+"?launcher="+Date.now(),{cache:"no-store",headers:{Accept:"application/vnd.github+json"}});
-        if(!response.ok)throw new Error("Runtime lookup failed: "+response.status);
-        var sha=String((await response.json()).sha||"");
-        if(!/^[0-9a-f]{40}$/i.test(sha))throw new Error("Runtime lookup returned an invalid commit");
+
+      async function resolveRuntime() {
+        var response = await fetch(
+          "https://api.github.com/repos/" + REPOSITORY + "/commits/" + RUNTIME_BRANCH + "?loader=" + Date.now(),
+          { cache: "no-store", headers: { Accept: "application/vnd.github+json" } }
+        );
+        if (!response.ok) throw new Error("Could not find the runtime build (HTTP " + response.status + ").");
+        var sha = String((await response.json()).sha || "");
+        if (!/^[0-9a-f]{40}$/i.test(sha)) throw new Error("The runtime returned an invalid commit.");
         return sha;
       }
-      async function start(ids){
-        if(ids&&ids.length===0)return;
-        stage.classList.add("visible");status.textContent=ids?"Preparing "+ids.length+" mod"+(ids.length===1?"":"s")+"…":"Loading standard Celeste…";
-        var query=ids?"?bundle="+encodeURIComponent(ids.join(",")):"";
-        if(!globalThis.crossOriginIsolated){location.assign(HOSTED_FALLBACK+query);return;}
-        try{
-          status.textContent="Resolving current Webleste build…";
-          var sha=await runtimeRef();
-          var base="https://cdn.jsdelivr.net/gh/"+REPOSITORY+"@"+sha+"/";
-          var response=await fetch(base+".vite/manifest.json");
-          if(!response.ok)throw new Error("Runtime manifest failed: "+response.status);
-          var manifest=await response.json();
-          var entry=manifest["index.html"];
-          if(!entry||!entry.file)throw new Error("Webleste entry is missing");
-          var baseTag=document.createElement("base");baseTag.href=base;document.head.appendChild(baseTag);
-          (entry.css||[]).forEach(function(file){var link=document.createElement("link");link.rel="stylesheet";link.href=base+file;document.head.appendChild(link);});
-          history.replaceState(null,"",location.pathname+query+location.hash);
-          document.body.innerHTML='<div id="app"></div>';
-          await loadScript(base+"bundled-mods.js");
-          await import(base+entry.file);
-        }catch(error){
-          console.error("[Celeste launcher] jsDelivr runtime failed",error);
-          status.textContent="jsDelivr failed; opening the hosted build…";
-          location.assign(HOSTED_FALLBACK+query);
+
+      async function start(bundle, save) {
+        if (booting) return;
+        booting = true;
+        menu.hidden = true;
+        loading.classList.add("visible");
+
+        if (!globalThis.crossOriginIsolated) {
+          status.textContent = "Cannot start here.";
+          error.textContent = "This loader needs COOP and COEP headers because Webleste uses WASM threads.";
+          return;
+        }
+
+        try {
+          var sha = await resolveRuntime();
+          var base = "https://cdn.jsdelivr.net/gh/" + REPOSITORY + "@" + sha + "/";
+          var response = await fetch(base + ".vite/manifest.json");
+          if (!response.ok) throw new Error("Could not load the runtime manifest (HTTP " + response.status + ").");
+          var entry = (await response.json())["index.html"];
+          if (!entry || !entry.file) throw new Error("The Webleste entry is missing from the runtime manifest.");
+
+          var baseTag = document.createElement("base");
+          baseTag.href = base;
+          document.head.appendChild(baseTag);
+          (entry.css || []).forEach(function (file) {
+            var link = document.createElement("link");
+            link.rel = "stylesheet";
+            link.href = base + file;
+            document.head.appendChild(link);
+          });
+
+          var params = new URLSearchParams();
+          if (bundle) params.set("bundle", bundle);
+          params.set("save", save);
+          history.replaceState(null, "", location.pathname + "?" + params.toString());
+          document.body.innerHTML = '<div id="app"></div>';
+          await loadScript(base + "bundled-mods.js");
+          await import(base + entry.file);
+        } catch (reason) {
+          console.error("[Celeste loader]", reason);
+          status.textContent = "Could not load Celeste.";
+          error.textContent = reason instanceof Error ? reason.message : String(reason);
+          booting = false;
         }
       }
-      document.getElementById("vanilla").onclick=function(){start(null);};
-      document.getElementById("launch").onclick=function(){start(Array.from(selected));};
-      var hash=location.hash.replace(/^#/,"");if(hash==="vanilla")start(null);else if(hash==="modded")start(Array.from(selected));
+
+      document.querySelectorAll("button[data-save]").forEach(function (button) {
+        button.addEventListener("click", function () {
+          start(button.getAttribute("data-bundle"), button.getAttribute("data-save"));
+        });
+      });
     })();
   </script>
 </body>

@@ -50,7 +50,7 @@ public static partial class CelesteBootstrap
     }
 
     [JSExport]
-    public static async Task MountFilesystems(string root, string[] rawDlls)
+    public static async Task MountFilesystems(string root, string[] rawDlls, string saveProfile)
     {
         try
         {
@@ -61,11 +61,15 @@ public static partial class CelesteBootstrap
             }
 
             TryCreateDirectory("/libsdl/Celeste/Mods");
-            TryCreateDirectory("/libsdl/Celeste/Saves");
+            if (string.IsNullOrEmpty(saveProfile) || saveProfile.Any(c => !char.IsLetterOrDigit(c) && c != '-' && c != '_'))
+                saveProfile = "main";
+            string savePath = $"/libsdl/Celeste/SaveProfiles/{saveProfile}";
+            TryCreateDirectory("/libsdl/Celeste/SaveProfiles");
+            TryCreateDirectory(savePath);
             TryCreateDirectory("/remote/");
             File.CreateSymbolicLink("/Content", "/libsdl/Content");
-            File.CreateSymbolicLink("/Saves", "/libsdl/Celeste/Saves");
-            File.CreateSymbolicLink("/remote/%GameInstall%Saves", "/libsdl/Celeste/Saves");
+            File.CreateSymbolicLink("/Saves", savePath);
+            File.CreateSymbolicLink("/remote/%GameInstall%Saves", savePath);
             MountDlls(root, rawDlls);
         }
         catch (Exception err)

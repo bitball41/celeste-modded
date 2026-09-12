@@ -399,11 +399,17 @@ export async function preInit() {
 	const runtimeRoot = import.meta.env.DEV
 		? new URL("/", location.href).href
 		: new URL("../", import.meta.url).href;
+	const requestedProfile =
+		new URLSearchParams(location.search).get("save") || "main";
+	const saveProfile = /^[a-z0-9_-]{1,40}$/i.test(requestedProfile)
+		? requestedProfile
+		: "main";
 
 	await runtime.runMain();
 	await exports.CelesteBootstrap.MountFilesystems(
 		runtimeRoot,
-		dlls.map((x) => `${x[0]}|${x[1]}`)
+		dlls.map((x) => `${x[0]}|${x[1]}`),
+		saveProfile
 	);
 	await exports.CelesteLoader.PreInit();
 	console.debug("dotnet initialized");
