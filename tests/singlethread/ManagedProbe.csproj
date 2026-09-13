@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk.WebAssembly">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <WasmEnableThreads>false</WasmEnableThreads>
+    <WasmEnableJSPI>true</WasmEnableJSPI>
+    <WasmBuildNative>true</WasmBuildNative>
+    <RunAOTCompilation>false</RunAOTCompilation>
+    <PublishTrimmed>false</PublishTrimmed>
+    <EmccExtraLDFlags>-sASYNCIFY=2</EmccExtraLDFlags>
+    <WasmEnableWebcil>false</WasmEnableWebcil>
+    <CompressionEnabled>false</CompressionEnabled>
+  </PropertyGroup>
+  <ItemGroup>
+    <EmscriptenEnvVars Include="WASM_ENABLE_JSPI=1" />
+  </ItemGroup>
+  <Target Name="UsePatchedRuntime" AfterTargets="ResolveFrameworkReferences" Condition="'$(CelesteRuntimePack)' != ''">
+    <ItemGroup>
+      <ResolvedRuntimePack PackageDirectory="$(CelesteRuntimePack)"
+        Condition="'%(ResolvedRuntimePack.FrameworkName)' == 'Microsoft.NETCore.App'" />
+    </ItemGroup>
+  </Target>
+</Project>
