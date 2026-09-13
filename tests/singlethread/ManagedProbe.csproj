@@ -10,6 +10,7 @@
     <EmccExtraLDFlags>-sASYNCIFY=2</EmccExtraLDFlags>
     <WasmEnableWebcil>false</WasmEnableWebcil>
     <CompressionEnabled>false</CompressionEnabled>
+    <WasmRunWasmOpt>false</WasmRunWasmOpt>
   </PropertyGroup>
   <ItemGroup>
     <EmscriptenEnvVars Include="WASM_ENABLE_JSPI=1" />
@@ -19,5 +20,15 @@
       <ResolvedRuntimePack PackageDirectory="$(CelesteRuntimePack)"
         Condition="'%(ResolvedRuntimePack.FrameworkName)' == 'Microsoft.NETCore.App'" />
     </ItemGroup>
+  </Target>
+  <Target Name="UseModernEmscripten" BeforeTargets="_SetupEmscripten" DependsOnTargets="_InitializeCommonProperties" Condition="'$(CelesteEmsdk)' != ''">
+    <PropertyGroup>
+      <EmscriptenSdkToolsPath>$(CelesteEmsdk)/upstream/</EmscriptenSdkToolsPath>
+      <EmscriptenUpstreamBinPath>$(CelesteEmsdk)/upstream/bin/</EmscriptenUpstreamBinPath>
+      <EmscriptenUpstreamEmscriptenPath>$(CelesteEmsdk)/upstream/emscripten/</EmscriptenUpstreamEmscriptenPath>
+      <EmscriptenNodeToolsPath>$(CelesteNode)</EmscriptenNodeToolsPath>
+      <WasmClang>$(CelesteEmsdk)/upstream/emscripten/emcc</WasmClang>
+      <WasmCachePath>$(CelesteEmsdk)/upstream/emscripten/cache/</WasmCachePath>
+    </PropertyGroup>
   </Target>
 </Project>
