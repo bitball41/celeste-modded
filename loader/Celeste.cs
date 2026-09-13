@@ -201,11 +201,20 @@ public static partial class CelesteLoader
         {
             Console.Error.WriteLine("Error in RunOneFrame()!");
             Console.Error.WriteLine(e);
-            return (Task<bool>)Task.FromException(e);
+            return Task.FromException<bool>(e);
         }
         return Task.FromResult((bool)RunApplication.GetValue(game));
     }
 
+#if CELESTE_SINGLE_THREAD
+    [JSExport]
+    internal static async Task MainLoop()
+    {
+        // Return control to the browser between frames for input and rendering.
+        while (await RunOneFrame())
+            await Task.Delay(1);
+    }
+#else
     [JSExport]
     internal static Task MainLoop()
     {
@@ -221,6 +230,8 @@ public static partial class CelesteLoader
         }
         return Task.Delay(0);
     }
+
+#endif
 
     [JSExport]
     internal static Task WatchMemoryUsage([JSMarshalAs<JSType.Function<JSType.Number, JSType.Boolean>>] Func<double, bool> callback)
