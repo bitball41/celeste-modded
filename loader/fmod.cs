@@ -1202,6 +1202,9 @@ namespace FMOD
         // Init/Close.
         public RESULT init(int maxchannels, INITFLAGS flags, IntPtr extradriverdata)
         {
+#if CELESTE_SINGLE_THREAD
+            flags |= INITFLAGS.STREAM_FROM_UPDATE | INITFLAGS.MIX_FROM_UPDATE;
+#endif
             return FMOD_System_Init(this.handle, maxchannels, flags, extradriverdata);
         }
         public RESULT close()
