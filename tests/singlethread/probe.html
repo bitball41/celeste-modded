@@ -1,0 +1,19 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Managed runtime diagnostic</title>
+<pre id="result">Starting managed runtime diagnostic…</pre>
+<script type="module">
+try {
+  const {dotnet} = await import('http://127.0.0.1:8769/_framework/dotnet.js');
+  console.log('PROBE_IMPORT_COMPLETE');
+  const runtime = await dotnet.withDiagnosticTracing(true).create();
+  console.log('PROBE_RUNTIME_READY');
+  runtime.setModuleImports('probe', {pause: () => new Promise(resolve => setTimeout(resolve, 1))});
+  await runtime.runMain('ManagedProbe', []);
+  const exports = await runtime.getAssemblyExports('ManagedProbe');
+  document.querySelector('#result').textContent = await exports.Program.TestAsyncInterop();
+} catch (error) {
+  document.querySelector('#result').textContent = String(error);
+  console.error(error);
+}
+</script>
