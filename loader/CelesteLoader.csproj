@@ -164,7 +164,7 @@
 		<PackageReference Include="MAB.DotIgnore" Version="3.0.2" />
 	</ItemGroup>
 
-	<Target Name="BeforeBuild">
+	<Target Name="BeforeBuild" Condition="'$(CelesteSingleThread)' != 'true'">
 		<Exec Command="bash '$(MSBuildProjectDirectory)/../replaceruntime.sh'" />
 		<Message Importance="High" Text="Replaced runtime" />
 	</Target>
@@ -209,4 +209,5 @@
 			<EmscriptenEnvVars Include="PATH=$(EmscriptenSdkToolsPath):$(EmscriptenUpstreamBinPath):$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath), 'emscripten')):$(EmscriptenNodeToolsPath):$(PATH)" />
 		</ItemGroup>
 	</Target>
+	<Import Project="SingleThread.props" Condition="'$(CelesteSingleThread)' == 'true'" />
 </Project>
