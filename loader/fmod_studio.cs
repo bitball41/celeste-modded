@@ -416,6 +416,10 @@ namespace FMOD.Studio
         }
         public RESULT initialize(int maxchannels, INITFLAGS studioflags, FMOD.INITFLAGS flags, IntPtr extradriverdata)
         {
+#if CELESTE_SINGLE_THREAD
+            studioflags |= INITFLAGS.SYNCHRONOUS_UPDATE | INITFLAGS.LOAD_FROM_UPDATE;
+            flags |= FMOD.INITFLAGS.STREAM_FROM_UPDATE | FMOD.INITFLAGS.MIX_FROM_UPDATE;
+#endif
             return FMOD_Studio_System_Initialize(this.handle, maxchannels, studioflags, flags, extradriverdata);
         }
         public RESULT release()
