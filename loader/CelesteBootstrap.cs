@@ -75,6 +75,7 @@ public static partial class CelesteBootstrap
         catch (Exception err)
         {
             Console.WriteLine(err);
+            throw;
         }
     }
 }
