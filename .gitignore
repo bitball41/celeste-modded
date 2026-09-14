@@ -15,3 +15,5 @@ obj
 
 analytics_tag
 .DS_Store
+
+/.build-tools/
