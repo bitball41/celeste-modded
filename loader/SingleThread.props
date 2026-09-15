@@ -5,7 +5,7 @@
     <WasmEnableJSPI>true</WasmEnableJSPI>
     <RunAOTCompilation>false</RunAOTCompilation>
     <WasmRunWasmOpt>false</WasmRunWasmOpt>
-    <EmccExtraLDFlags>-sMIN_WEBGL_VERSION=2 -sWASMFS -sASYNCIFY=2 -sMAXIMUM_MEMORY=4294901760</EmccExtraLDFlags>
+    <EmccExtraLDFlags>-sMIN_WEBGL_VERSION=2 -sWASMFS -sASYNCIFY=2 -sMAXIMUM_MEMORY=4294901760 -sALLOW_MEMORY_GROWTH=1</EmccExtraLDFlags>
     <MicrosoftNetCoreAppRuntimePackDir>$(CelesteRuntimePack)</MicrosoftNetCoreAppRuntimePackDir>
     <MicrosoftNetCoreAppRuntimePackRidDir>$(CelesteRuntimePack)/runtimes/browser-wasm</MicrosoftNetCoreAppRuntimePackRidDir>
     <__EmscriptenSdkToolsPath>$(CelesteEmsdk)/upstream/</__EmscriptenSdkToolsPath>
