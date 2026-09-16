@@ -1,4 +1,5 @@
 #include <emscripten/wasmfs.h>
+#include <emscripten/version.h>
 #include <emscripten/proxying.h>
 #include <emscripten/threading.h>
 #include <assert.h>
@@ -11,10 +12,19 @@ int mount_opfs() {
 	return ret;
 }
 
+#ifndef __EMSCRIPTEN_PTHREADS__
+#include "SingleThreadFetch.h"
+#else
 backend_t fetch_backend = NULL;
 
 int mount_fetch(char *srcdir, char *dstdir) {
-	if (!fetch_backend) fetch_backend = wasmfs_create_fetch_backend(srcdir);
+	if (!fetch_backend) {
+#if __EMSCRIPTEN_major__ >= 4
+        fetch_backend = wasmfs_create_fetch_backend(srcdir, 0);
+#else
+        fetch_backend = wasmfs_create_fetch_backend(srcdir);
+#endif
+    }
 	return wasmfs_create_directory(dstdir, 0777, fetch_backend);
 }
 
@@ -26,6 +36,8 @@ int mount_fetch_file(char *path) {
 		return close(ret);
 	return ret;
 }
+
+#endif
 
 void *SDL_CreateWindow(char *title, int w, int h, uint64_t flags);
 void *SDL__CreateWindow(char *title, int w, int h, unsigned int flags) {
