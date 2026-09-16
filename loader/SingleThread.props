@@ -17,10 +17,15 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Update="../NLua/build/net6.0/NLua.net6.0.csproj" AdditionalProperties="SignAssembly=false" />
+    <NativeFileReference Remove="lua54.a" />
+    <NativeFileReference Include="../statics/singlethread/lua54.a" />
     <EmscriptenEnvVars Include="WASM_ENABLE_JSPI=1" />
     <NativeFileReference Remove="../statics/SDL3.a;../statics/FNA3D.a;../statics/FAudio.a;../statics/libmojoshader.a;../statics/liba.o;../statics/hot_reload_detour.o;../statics/libcrypto.a" />
     <NativeFileReference Include="../statics/singlethread/SDL3.a;../statics/singlethread/FNA3D.a;../statics/singlethread/FAudio.a;../statics/singlethread/libmojoshader.a;../statics/singlethread/liba.o;../statics/singlethread/hot_reload_detour.o;../statics/singlethread/libcrypto.a" />
   </ItemGroup>
+  <Target Name="ModernizeSingleThreadGlue" AfterTargets="WasmAfterLinkSteps">
+    <Exec Command="&quot;$(CelesteNode)&quot; &quot;$(MSBuildProjectDirectory)/../tests/singlethread/modernize-native.cjs&quot; &quot;$(_WasmIntermediateOutputPath)dotnet.native.js&quot;" />
+  </Target>
   <Target Name="ValidateSingleThreadInputs" BeforeTargets="PrepareForBuild">
     <Error Condition="!Exists('$(CelesteRuntimePack)/runtimes/browser-wasm/native/libmonosgen-2.0.a')" Text="Set CelesteRuntimePack to the extracted ST-dotnet-jspi runtime pack." />
     <Error Condition="!Exists('$(__WasmClang)')" Text="Set CelesteEmsdk to Emscripten 4.0.23 and CelesteNode to its node executable." />
