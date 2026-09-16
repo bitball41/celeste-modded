@@ -38,7 +38,8 @@ if (!source.includes('// celeste early exports')) {
   beforePreInit('// celeste early exports\n' + exports[0]);
 }
 if (!source.includes('// celeste deferred native exports')) {
-  const exports = [...source.matchAll(/Module\['([^']+)'\] = wasmExports\['([^']+)'\];/g)];
+  const exports = [...source.matchAll(/Module\[['"]([^'"]+)['"]\] = wasmExports\[['"]([^'"]+)['"]\];/g)];
+  if (!exports.length) throw new Error('Native export assignments missing');
   const wrappers = exports.map(([, name, native]) =>
     `Module[${JSON.stringify(name)}] = (...args) => wasmExports[${JSON.stringify(native)}](...args);`
   ).join('\n');
@@ -46,7 +47,7 @@ if (!source.includes('// celeste deferred native exports')) {
 }
 source = source.replace(/^(\s*)(HEAP(?:U?8|U?16|U?32|F32|F64|64|U64)) = new /gm,
   (_, space, heap) => `${space}${heap} = Module[${JSON.stringify(heap)}] = new `);
-source = source.replace("    Module['wasmExports'] = wasmExports;", "    Module['wasmExports'] = instance.exports;");
+source = source.replace(/^    Module\[['"]wasmExports['"]\] = wasmExports;$/gm, 'Module["wasmExports"] = instance.exports;');
 if (!source.includes('// celeste returned module lifecycle')) {
   source = source.replace('createDotnetRuntime = Module = moduleArg(Module);', `createDotnetRuntime = Module = moduleArg(Module);
 // celeste returned module lifecycle
