@@ -24,13 +24,13 @@ public partial class Patcher
             else if (File.Exists("/libsdl/Celeste.exe"))
             {
                 patcher = new("/libsdl/Celeste.exe");
-                patcher.installEverest = installEverest;
             }
             else
             {
                 throw new Exception("Celeste.dll or Celeste.exe not found!");
             }
 
+            patcher.installEverest = installEverest;
             patcher.patch();
             patcher.write("/libsdl/CustomCeleste.dll");
 
