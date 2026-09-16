@@ -1,0 +1,58 @@
+name: Single-file runtime
+on:
+  workflow_dispatch:
+  push:
+    branches: [single-file-runtime]
+permissions:
+  contents: read
+concurrency:
+  group: single-file-runtime-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  runtime:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            10.0.401
+            8.0.x
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install compilers and sources
+        run: |
+          dotnet workload install wasm-tools --skip-manifest-update
+          mkdir -p .build-tools
+          git clone --depth 1 https://github.com/emscripten-core/emsdk .build-tools/emsdk
+          .build-tools/emsdk/emsdk install 4.0.23
+          .build-tools/emsdk/emsdk activate 4.0.23
+          make FNA MonoMod NLua SteamKit2.WASM
+      - name: Build native dependencies and runtime
+        run: |
+          export CELESTE_EMSDK="$PWD/.build-tools/emsdk"
+          export CELESTE_NODE="$(command -v node)"
+          export CELESTE_DOTNET="$(readlink -f "$(command -v dotnet)")"
+          export CELESTE_RUNTIME_PACK="$PWD/statics/singlethread/runtime"
+          bash tests/singlethread/prepare-native.sh
+          bash tests/singlethread/build-game.sh -v:minimal
+      - name: Check browser startup from a local file
+        run: |
+          npm install --prefix .build-tools/browser-check playwright@1.58.2
+          export NODE_PATH="$PWD/.build-tools/browser-check/node_modules"
+          node .build-tools/browser-check/node_modules/playwright/cli.js install --with-deps chromium
+          node tests/singlethread/check-glue.cjs
+          node tests/singlethread/check-storage.cjs
+          node tests/singlethread/check-game-runtime.cjs
+      - name: Preserve build and test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: single-file-runtime-diagnostic
+          path: |
+            loader/bin/Release/net10.0/publish/wwwroot/
+            tests/singlethread/*-result.json
+          if-no-files-found: warn
+          retention-days: 30
