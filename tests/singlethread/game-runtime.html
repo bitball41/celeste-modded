@@ -1,0 +1,17 @@
+<!doctype html><meta charset="utf-8"><title>Game runtime diagnostic</title>
+<pre id="result">Starting game runtime…</pre><canvas id="canvas" class="canvas"></canvas>
+<script src="../../frontend/public/local-file-storage.js"></script>
+<script type="module">
+try {
+  const {dotnet} = await import('http://127.0.0.1:8769/_framework/dotnet.js');
+  const runtime = await dotnet.create();
+  window.runtime = runtime;
+  const config = runtime.getConfig();
+  const exports = await runtime.getAssemblyExports(config.mainAssemblyName);
+  await runtime.runMain();
+  const dlls = [...(config.resources.coreAssembly || []), ...(config.resources.assembly || [])].map(x => `${x.name}|${x.virtualPath}`);
+  await exports.CelesteBootstrap.MountFilesystems('http://127.0.0.1:8769/', dlls, 'test');
+  await exports.CelesteLoader.PreInit();
+  document.querySelector('#result').textContent = 'GAME_RUNTIME_MOUNT_PASS';
+} catch(error) { document.querySelector('#result').textContent=String(error); console.error(error); }
+</script>
