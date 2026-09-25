@@ -4,7 +4,7 @@ on:
   push:
     branches: [single-file-runtime]
 permissions:
-  contents: read
+  contents: write
 concurrency:
   group: single-file-runtime-${{ github.ref }}
   cancel-in-progress: true
@@ -22,6 +22,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
+      - uses: pnpm/action-setup@v4
+        with:
+          version: '10'
       - name: Install compilers and sources
         run: |
           dotnet workload install wasm-tools --skip-manifest-update
@@ -46,6 +49,14 @@ jobs:
           node tests/singlethread/check-glue.cjs
           node tests/singlethread/check-storage.cjs
           node tests/singlethread/check-game-runtime.cjs
+      - name: Build CDN frontend
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
+      - name: Check standalone HTML launches from file
+        run: |
+          export NODE_PATH="$PWD/.build-tools/browser-check/node_modules"
+          node tests/singlethread/check-single-file-loader.cjs
       - name: Preserve build and test evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -56,3 +67,26 @@ jobs:
             tests/singlethread/*-result.json
           if-no-files-found: warn
           retention-days: 30
+      - name: Publish game-free runtime to jsDelivr source branch
+        run: |
+          set -euo pipefail
+          publish="$RUNNER_TEMP/celeste-runtime-publish"
+          mkdir -p "$publish"
+          cp -a frontend/dist/. "$publish/"
+          cp frontend/dist/.vite/manifest.json "$publish/manifest.json"
+          cp -a loader/bin/Release/net10.0/publish/wwwroot/_framework "$publish/_framework"
+          # The build contains only the loader and open-source dependencies.
+          # Celeste and the mod archives are supplied separately at runtime.
+          git fetch origin runtime || true
+          if git show-ref --verify --quiet refs/remotes/origin/runtime; then
+            git checkout -B runtime origin/runtime
+          else
+            git checkout --orphan runtime
+          fi
+          git rm -rf --ignore-unmatch . >/dev/null
+          rsync -a --delete --exclude='.git/' "$publish/" ./
+          git add -A
+          if ! git diff --cached --quiet; then
+            git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m "Publish standalone runtime ${GITHUB_SHA}"
+            git push origin HEAD:runtime
+          fi

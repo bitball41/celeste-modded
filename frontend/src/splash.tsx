@@ -163,7 +163,7 @@ const Intro: Component<
 				This is a near-complete port of{" "}
 				<Link href="https://www.celestegame.com/">Celeste</Link> and{" "}
 				<Link href="https://everestapi.github.io/">Everest</Link> to the browser
-				using <b>.NET 9's threaded WebAssembly support</b>. It also uses{" "}
+				using <b>WebAssembly</b>. It also uses{" "}
 				<Link href="https://github.com/r58playz/monomod">
 					r58Playz's <b>MonoMod WASM port</b>
 				</Link>{" "}

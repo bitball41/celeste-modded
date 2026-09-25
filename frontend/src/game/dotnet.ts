@@ -201,12 +201,12 @@ export const loadedLibcurlPromise = new Promise((r) => (libcurlresolver = r));
 export async function preInit() {
 	if (gameState.ready) return;
 
-	let url = "../_framework/dotnet.js";
-	if (import.meta.env.DEV) {
-		url = "/_framework/dotnet.js";
-	}
-
-	wasm = await eval(`import("${url}")`);
+	// Relative to this module, not to the HTML document: the standalone
+	// launcher lives on file:// while the runtime lives on the CDN.
+	const url = import.meta.env.DEV
+		? new URL("/_framework/dotnet.js", location.href).href
+		: new URL("../_framework/dotnet.js", import.meta.url).href;
+	wasm = await import(/* @vite-ignore */ url);
 	dotnet = wasm.dotnet;
 
 	console.debug("initializing dotnet");
@@ -248,7 +248,13 @@ export async function preInit() {
 					};
 
 					let chunk = await fetchNext();
-					if (!chunk) throw new Error("failed to fetch first chunk");
+					if (!chunk) {
+						// The single-thread build publishes one native WASM file.
+						// Threaded builds may still publish numbered parts.
+						const full = await nativefetch(defaultUri);
+						if (!full.ok) throw new Error(`failed to fetch WASM: ${full.status}`);
+						return full;
+					}
 					let currentStream: ReadableStreamDefaultReader<Uint8Array> = chunk;
 
 					let stream = new ReadableStream({
@@ -400,7 +406,9 @@ export async function preInit() {
 		? new URL("/", location.href).href
 		: new URL("../", import.meta.url).href;
 	const requestedProfile =
-		new URLSearchParams(location.search).get("save") || "main";
+		(globalThis as any).__weblesteStandaloneSelection?.save ||
+		new URLSearchParams(location.search).get("save") ||
+		"main";
 	const saveProfile = /^[a-z0-9_-]{1,40}$/i.test(requestedProfile)
 		? requestedProfile
 		: "main";

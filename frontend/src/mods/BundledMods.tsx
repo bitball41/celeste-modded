@@ -6,7 +6,9 @@ import { modInstallState } from "./state";
 const modPack = window.WeblesteModPack;
 const bundledMaps = modPack.catalog.maps;
 const requestedBundles = (() => {
-	const requested = new URLSearchParams(location.search).get("bundle");
+	const requested: string | null =
+		(globalThis as any).__weblesteStandaloneSelection?.bundle ||
+		new URLSearchParams(location.search).get("bundle");
 	if (!requested) return [];
 	return requested
 		.split(",")

@@ -316,7 +316,10 @@ export const Main: Component<
 			},
 			{ once: true }
 		);
-		if (new URLSearchParams(location.search).has("bundle")) {
+		if (
+			(globalThis as any).__weblesteStandaloneSelection?.bundle ||
+			new URLSearchParams(location.search).has("bundle")
+		) {
 			useChange([gameState.hasEverest], () => {
 				if (gameState.hasEverest && !gameState.playing)
 					this.modInstallerOpen = true;

@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Celeste Modded</title>
+  <style>
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #000; color: #fff; font: 16px system-ui, sans-serif; text-align: center; }
+    main { width: min(360px, calc(100% - 32px)); }
+    [hidden] { display: none !important; }
+    button { display: block; width: 100%; padding: 10px; margin: 8px 0; background: #111; color: #fff; border: 1px solid #666; font: inherit; cursor: pointer; }
+    progress { width: 100%; accent-color: #fff; }
+    #error { color: #f77; overflow-wrap: anywhere; }
+    small { color: #aaa; }
+  </style>
+</head>
+<body>
+  <main id="menu">
+    <h1>Celeste Modded</h1>
+    <p>Separate saves</p>
+    <button data-bundle="tornado-valley" data-save="tornado-valley">Tornado Valley</button>
+    <button data-bundle="path-of-hope" data-save="path-of-hope">Path of Hope (A-side)</button>
+    <button data-bundle="cat-isle" data-save="cat-isle">Cat Isle</button>
+    <p>Shared save</p>
+    <button data-bundle="tornado-valley,path-of-hope,cat-isle" data-save="shared">All three maps</button>
+    <small>On first launch, select your Celeste install. Mods and their dependencies download when needed.</small>
+  </main>
+  <main id="loading" hidden>
+    <h1>Loading Celeste</h1>
+    <p id="status">Checking the runtime…</p>
+    <progress id="progress" max="100" value="5"></progress>
+    <p id="error" role="alert"></p>
+    <button id="retry" hidden>Back</button>
+  </main>
+  <script>
+    (() => {
+      'use strict';
+      const repo = 'Bitball41/celeste-modded';
+      const menu = document.querySelector('#menu');
+      const loading = document.querySelector('#loading');
+      const status = document.querySelector('#status');
+      const progress = document.querySelector('#progress');
+      const error = document.querySelector('#error');
+      const retry = document.querySelector('#retry');
+      let booting = false;
+
+      function script(src) {
+        return new Promise((resolve, reject) => {
+          const tag = document.createElement('script');
+          tag.src = src;
+          tag.onload = resolve;
+          tag.onerror = () => reject(new Error('Could not download ' + src));
+          document.head.append(tag);
+        });
+      }
+
+      async function boot(bundle, save) {
+        if (booting) return;
+        booting = true;
+        menu.hidden = true;
+        loading.hidden = false;
+        retry.hidden = true;
+        error.textContent = '';
+        progress.value = 5;
+        try {
+          const response = await fetch('https://api.github.com/repos/' + repo + '/commits/runtime', {cache: 'no-store'});
+          if (!response.ok) throw new Error('Runtime is unavailable (HTTP ' + response.status + ').');
+          const sha = (await response.json()).sha;
+          if (!/^[0-9a-f]{40}$/i.test(sha)) throw new Error('Invalid runtime revision.');
+          const base = 'https://cdn.jsdelivr.net/gh/' + repo + '@' + sha + '/';
+          status.textContent = 'Loading runtime…';
+          progress.value = 20;
+          const manifestResponse = await fetch(base + 'manifest.json');
+          if (!manifestResponse.ok) throw new Error('Runtime manifest is unavailable (HTTP ' + manifestResponse.status + ').');
+          const entry = (await manifestResponse.json())['index.html'];
+          if (!entry?.file) throw new Error('Runtime entry is missing.');
+          const baseTag = document.createElement('base');
+          baseTag.href = base;
+          document.head.append(baseTag);
+          for (const file of entry.css || []) {
+            const link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = base + file;
+            document.head.append(link);
+          }
+          progress.value = 50;
+          status.textContent = 'Preparing saves and mods…';
+          await script(base + 'local-file-storage.js');
+          await script(base + 'bundled-mods.js');
+          globalThis.__weblesteStandaloneSelection = {bundle, save};
+          progress.value = 85;
+          status.textContent = 'Starting Celeste…';
+          const app = document.createElement('div');
+          app.id = 'app';
+          document.body.append(app);
+          try {
+            await import(base + entry.file);
+          } catch (cause) {
+            app.remove();
+            throw cause;
+          }
+          loading.remove();
+          menu.remove();
+        } catch (cause) {
+          console.error('[Celeste]', cause);
+          status.textContent = 'Could not start Celeste';
+          error.textContent = cause instanceof Error ? cause.message : String(cause);
+          retry.hidden = false;
+          booting = false;
+        }
+      }
+
+      retry.addEventListener('click', () => {loading.hidden = true; menu.hidden = false;});
+      for (const button of menu.querySelectorAll('[data-bundle]')) {
+        button.addEventListener('click', () => boot(button.dataset.bundle, button.dataset.save));
+      }
+    })();
+  </script>
+</body>
+</html>
